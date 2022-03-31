@@ -1,15 +1,17 @@
 {
-  "name": "clase6-servidorweb",
+  "name": "clase8-apirestfull",
   "version": "1.0.0",
   "description": "",
-  "main": "servidor.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node servidor.js"
+    "start": "node server.js"
   },
+  "type": "module",
   "author": "",
   "license": "ISC",
   "dependencies": {
     "express": "^4.17.3"
   }
+      
 }
