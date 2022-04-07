@@ -1,6 +1,6 @@
 import express from 'express';
 import Producto from './classes/producto.js';
-
+//import { engine } from 'express-handlebars';
 
 const { Router } = express; 
 
@@ -15,10 +15,34 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
+// app.engine(
+//     "hbs",
+//     engine({
+//         extname: ".hbs",
+//         defaultLayout: 'index.hbs',
+//     })
+//   );
+
+
+//----------------- Seteo Pug Begin ---------------------------
+
+app.set('views', './views');
+
+app.set('view engine', 'ejs');
+ //app.set('view engine', 'hbs');
+// app.set('view engine', 'pug');
+
+
+
+
+//----------------- Seteo Pug End ---------------------------
+
 app.use('/api/productos', router);
 
 
 app.use(express.static('public'));
+
+
 
 const server = app.listen(PORT, () => {
     console.log(`Servidor http escuchando en el puerto ${server.address().port}`);
@@ -26,8 +50,44 @@ const server = app.listen(PORT, () => {
 
 server.on('error',error => console.log(`Error en el servidor ${error}`))
 
-
 let productos = [];
+
+
+//TEMPLATES
+    // TEMPLATE PUG
+    // app.get('/productos', (req, res) => {
+    //     res.render("pug/view", {
+    //     productosView: productos,
+    //     productosViewExist: productos.length
+    //     });
+    // });
+
+    // TEMPLATE HANDLEBARS
+    // app.get('/productos', (req, res) => {
+    //     res.render("handlebars/view", {
+    //     productosView: productos,
+    //     productosViewExist: productos.length
+    //     });
+    //     });
+
+    // TEMPLATE EJS
+    app.get('/productos', (req, res) => {
+        res.render("ejs/view", {
+        productosView: productos,
+        productosViewExist: productos.length
+        });
+    });
+
+    app.post('/productos', (req, res) => {
+        const id = getMaxId();
+        console.log(req.body);
+        const producto = new Producto(id + 1, req.body.title, req.body.price, req.body.thumbnails);
+    
+        productos.push(producto);
+        res.redirect('/')
+    });
+  
+
 
 // app.get('/', (req, res) => {
 //     res.send({ mensaje: 'Hola Mundo'})
