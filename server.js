@@ -2,16 +2,15 @@ import express from 'express';
 import * as http from 'http';
 import * as socket  from 'socket.io';
 
-import Product from './classes/producto.js';
-import Message from "./classes/messaje.js";
-import Container from "./classes/container.js";
-
-
+import Product from './classes/product.js';
+import Message from "./classes/message.js";
+// import Container from "./classes/container.js";
 import { engine } from 'express-handlebars';
+import { createProductTable, createMessagesTable, KnexConfiguration } from './utils/utils.js';
+import { mySqlDatabase, sqlLite3Database } from './config/configuration.js';
+
 
 // Chat con Socket.io
-// const { Server: HttpServer } = require('http');
-// const { Server: IOServer } = require('socket.io');
 const { Server: HttpServer } = http;
 const { Server: IOServer } = socket;
 
@@ -28,12 +27,10 @@ const router = Router();
 
 const PORT = 8080;
 
-const container = new Container('messages.txt');
+// const container = new Container('messages.txt');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-
 
 app.engine(
     "hbs",
@@ -53,8 +50,6 @@ app.set('views', './views');
 // app.set('view engine', 'pug');
 
 
-
-
 //----------------- Seteo Pug End ---------------------------
 
 
@@ -68,57 +63,61 @@ app.get('/', (req, res) => {
     res.sendFile('index.html', { root: __dirname })
 })
 
-
-
-
 const server = httpServer.listen(PORT, () => {
     console.log(`Servidor http escuchando en el puerto ${server.address().port}`);
 })
 
 server.on('error',error => console.log(`Error en el servidor ${error}`))
 
-let products = [];
-let messages = [];
+
+createProductTable();
+createMessagesTable();
+const productsDbUtils = new KnexConfiguration(mySqlDatabase, 'products');
+const messagesDbUtils = new KnexConfiguration(sqlLite3Database, 'messages');
+
+let messagesArray = [];
+let productsArray = [];
+
+
 
 //-----------------------------------------------------
 //-------- Configuracion del Socket -------------------
 //-----------------------------------------------------
-// io.on('connection', (socket) => {
-//     "connection" se ejecuta la primera vez que se abre una nueva conexión
-//       console.log('Nuevo Usuario conectado');
-//     Se imprimirá solo la primera vez que se ha abierto la conexión    
-//     socket.emit('mi mensaje', 'Este es mi mensaje desde el servidor al conectarse');
 
-//         Servidor
-//         socket.on('notificacion', data => {
-//             console.log(data)
-//         })
-//         socket.emit('messages', messages);
-
-//         socket.on('new-message',data => {
-//             console.log(data);
-//             messages.push(data);
-//             io.sockets.emit('messages', messages);
-//         });
-    
-// })
 
 
 io.on('connection', (socket) => {
     console.log('Cliente conectado');
-    socket.emit('products', products); 
-    socket.emit('messages', messages); 
+     
+    //socket.emit('messages', messages);
+    messagesDbUtils.getAll().then((messages)=>{
+        messagesArray = messages;
+        socket.emit('messages', messagesArray);
+    }).catch(error => console.log(error));
+
+    // socket.emit('products', products);
+    productsDbUtils.getAll().then((products)=> {
+        productsArray = products;
+        socket.emit('products', productsArray); 
+    }).catch(error => console.log(error));
   
     socket.on('new-product', function(data) {
-      products.push(data);
-      io.sockets.emit('products', products); 
+    //   products.push(data);
+    //   io.sockets.emit('products', products); 
+        const product = new Product(undefined, data.title, data.price, data.thumbnails);
+        productsDbUtils.insertData(product).then(() => {
+        io.sockets.emit('products', productsArray); 
+        }).catch(error => console.log(error));
     });    
   
     socket.on('new-message', function(data) {
-      messages.push(data);
-      container.save(new Message(data.email, data.dateTime, data.text))
-      io.sockets.emit('messages', messages); 
-    }); 
+        // messages.push(data);
+        // io.sockets.emit('messages', messages); 
+        const message = new Message(data.email, data.dateTime, data.text)
+        messagesDbUtils.insertData(message).then(()=>{
+            io.sockets.emit('messages', messagesArray);
+        }).catch(error => console.log(error));
+    });
 })
 
 

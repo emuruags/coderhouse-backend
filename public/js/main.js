@@ -8,8 +8,8 @@ socket.on('products', function(data) {
   });
   
 socket.on('messages', function(data) { 
-console.log(data);
-renderMessages(data);
+    console.log(data);
+    renderMessages(data);
 });
 
 function renderProducts(data) { 
